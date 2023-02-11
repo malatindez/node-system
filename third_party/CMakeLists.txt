@@ -1,6 +1,5 @@
 set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 
-set(OPENSSL_DIR "${LIB_DIR}/openssl")
 set(SPDLOG_DIR "${LIB_DIR}/spdlog")
 
 # spdlog
@@ -10,11 +9,14 @@ function(target_add_spdlog TARGET)
   target_include_directories("${TARGET}" PRIVATE "${SPDLOG_DIR}/include")
 endfunction(target_add_spdlog)
 
-
+find_package(OpenSSL REQUIRED)
 function(target_add_openssl TARGET)
-  target_include_directories("${TARGET}" PRIVATE "${OPENSSL_DIR}/include")
-  target_link_libraries("${TARGET}" "${OPENSSL_DIR}/lib/libssl.lib")
-  target_link_libraries("${TARGET}" "${OPENSSL_DIR}/lib/libcrypto.lib")
+  if(OPENSSL_FOUND)
+    target_include_directories("${TARGET}" PRIVATE "${OPENSSL_INCLUDE_DIR}")
+    target_link_libraries("${TARGET}" PRIVATE "${OPENSSL_LIBRARIES}")
+  else()
+    message(FATAL_ERROR "OpenSSL not found")
+  endif()
 endfunction(target_add_openssl)
 
 function(target_add_libraries TARGET)

@@ -19,4 +19,6 @@ make_directory(${CMAKE_BINARY_DIR}/binary)
 set(BINARY_OUTPUT_DIR ${CMAKE_BINARY_DIR}/binary)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/third_party/CMakeLists.txt")
+include("${CMAKE_CURRENT_SOURCE_DIR}/node_system/CMakeLists.txt")
 include("${CMAKE_CURRENT_SOURCE_DIR}/L1_basic/CMakeLists.txt")
+include("${CMAKE_CURRENT_SOURCE_DIR}/L2_core/CMakeLists.txt")
