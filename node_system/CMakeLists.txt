@@ -1,0 +1,22 @@
+set(NODE_SYSTEM_SOURCES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/node_system")
+file(GLOB_RECURSE NODE_SYSTEM_SOURCES ${NODE_SYSTEM_SOURCES_DIR}/*.*)
+
+foreach(_source IN ITEMS ${NODE_SYSTEM_SOURCES})
+    if(IS_ABSOLUTE "${_source}")
+        file(RELATIVE_PATH _source_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${_source}")
+    else()
+        set(_source_rel "${_source}")
+    endif()
+
+    get_filename_component(_source_path "${_source_rel}" PATH)
+    string(REPLACE "/" "\\" _source_path_msvc "${_source_path}")
+    source_group("${_source_path_msvc}" FILES "${_source}")
+endforeach()
+
+# add_library(node_system STATIC "${NODE_SYSTEM_SOURCES}")
+# target_precompile_headers(node_system PRIVATE "${NODE_SYSTEM_SOURCES_DIR}/include/library-pch.hpp")
+# target_add_libraries(node_system "entt" "spdlog")
+# target_include_directories(node_system PRIVATE ${NODE_SYSTEM_SOURCES_DIR})
+
+# set_target_properties(node_system PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BINARY_OUTPUT_DIR})
+# set_target_properties(node_system PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${BINARY_OUTPUT_DIR})
