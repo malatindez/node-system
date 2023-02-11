@@ -1,6 +1,7 @@
 set(NODE_SYSTEM_SOURCES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/node_system")
 file(GLOB_RECURSE NODE_SYSTEM_SOURCES ${NODE_SYSTEM_SOURCES_DIR}/*.*)
 
+IF (WIN32)
 foreach(_source IN ITEMS ${NODE_SYSTEM_SOURCES})
     if(IS_ABSOLUTE "${_source}")
         file(RELATIVE_PATH _source_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${_source}")
@@ -12,7 +13,7 @@ foreach(_source IN ITEMS ${NODE_SYSTEM_SOURCES})
     string(REPLACE "/" "\\" _source_path_msvc "${_source_path}")
     source_group("${_source_path_msvc}" FILES "${_source}")
 endforeach()
-
+ENDIF()
 # add_library(node_system STATIC "${NODE_SYSTEM_SOURCES}")
 # target_precompile_headers(node_system PRIVATE "${NODE_SYSTEM_SOURCES_DIR}/include/library-pch.hpp")
 # target_add_libraries(node_system "entt" "spdlog")
