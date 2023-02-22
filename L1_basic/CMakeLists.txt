@@ -18,14 +18,14 @@ foreach(_source IN ITEMS ${L1_BASIC_NODE_SOURCES})
 endforeach()
 ENDIF()
 
-add_executable(L1_basic_node WIN32 ${L1_BASIC_NODE_SOURCES} ${NODE_SYSTEM_SOURCES})
+add_executable(L1_basic_node ${L1_BASIC_NODE_SOURCES} ${NODE_SYSTEM_SOURCES})
 target_include_directories(L1_basic_node PRIVATE ${L1_BASIC_NODE_SOURCES_DIR})
 target_include_directories(L1_basic_node PRIVATE ${NODE_SYSTEM_SOURCES_DIR})
 set(CMAKE_CXX_FLAGS_DEBUG_INIT "${CMAKE_CXX_FLAGS_DEBUG_INIT}" "Zl")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCREMENTAL /EDITANDCONTINUE")
 
 # target_link_libraries(L1_basic_node node_system)
-target_add_libraries(L1_basic_node "openssl" "spdlog")
+target_add_libraries(L1_basic_node "boost" "spdlog" "openssl")
 #target_precompile_headers(L1_basic_node PRIVATE "${NODE_SYSTEM_SOURCES_DIR}/include/library-pch.hpp")
 
 set_target_properties(L1_basic_node PROPERTIES LINKER_LANGUAGE CXX)

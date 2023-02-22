@@ -1,23 +1,34 @@
 set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 
 set(SPDLOG_DIR "${LIB_DIR}/spdlog")
+set(BOOST_DIR "${LIB_DIR}/boost-cmake")
 
 # spdlog
 add_subdirectory("${SPDLOG_DIR}" EXCLUDE_FROM_ALL)
+
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+find_package(OpenSSL REQUIRED)
+
+add_subdirectory("${BOOST_DIR}")
+
 
 function(target_add_spdlog TARGET)
   target_include_directories("${TARGET}" PRIVATE "${SPDLOG_DIR}/include")
 endfunction(target_add_spdlog)
 
-find_package(OpenSSL REQUIRED)
 function(target_add_openssl TARGET)
   if(OPENSSL_FOUND)
     target_include_directories("${TARGET}" PRIVATE "${OPENSSL_INCLUDE_DIR}")
-    target_link_libraries("${TARGET}" PRIVATE "${OPENSSL_LIBRARIES}")
+    target_link_libraries("${TARGET}" PUBLIC OpenSSL::Crypto)
   else()
     message(FATAL_ERROR "OpenSSL not found")
   endif()
 endfunction(target_add_openssl)
+
+function(target_add_boost TARGET)
+  target_include_directories("${TARGET}" PUBLIC Boost::boost)
+  target_link_libraries("${TARGET}" PUBLIC Boost::boost)
+endfunction(target_add_boost)
 
 function(target_add_libraries TARGET)
   if("${ARGN}" MATCHES "[oO][pP][eE][nN][sS][sS][lL]")
@@ -26,6 +37,10 @@ function(target_add_libraries TARGET)
 
   if("${ARGN}" MATCHES "[sS][pP][dD][lL][oO][gG]")
     target_add_spdlog(${TARGET})
+  endif()
+
+  if("${ARGN}" MATCHES "[bB][oO][oO][sS][tT]")
+    target_add_boost(${TARGET})
   endif()
   
 endfunction(target_add_libraries)
