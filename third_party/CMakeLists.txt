@@ -9,6 +9,7 @@ add_subdirectory("${SPDLOG_DIR}" EXCLUDE_FROM_ALL)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
 
+set(Boost_USE_STATIC_LIBS ON)
 add_subdirectory("${BOOST_DIR}")
 
 
@@ -27,7 +28,13 @@ endfunction(target_add_openssl)
 
 function(target_add_boost TARGET)
   target_include_directories("${TARGET}" PUBLIC Boost::boost)
+  target_include_directories("${TARGET}" PUBLIC Boost::system)
+  target_include_directories("${TARGET}" PUBLIC Boost::filesystem)
+  target_include_directories("${TARGET}" PUBLIC Boost::program_options)
   target_link_libraries("${TARGET}" PUBLIC Boost::boost)
+  target_link_libraries("${TARGET}" PUBLIC Boost::system)
+  target_link_libraries("${TARGET}" PUBLIC Boost::filesystem)
+  target_link_libraries("${TARGET}" PUBLIC Boost::program_options)
 endfunction(target_add_boost)
 
 function(target_add_libraries TARGET)

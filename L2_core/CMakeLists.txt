@@ -3,6 +3,7 @@ set(CPP_SOURCES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/L2_core")
 file(GLOB_RECURSE CPP_SOURCES ${CPP_SOURCES_DIR} *.*)
 list(FILTER CPP_SOURCES INCLUDE REGEX ${CPP_SOURCES_DIR}/*)
 set(L2_CORE_NODE_SOURCES ${CPP_SOURCES})
+set(PROJECT_NAME L2_core_node)
 
 IF (WIN32)
 foreach(_source IN ITEMS ${L2_CORE_NODE_SOURCES})
@@ -18,18 +19,18 @@ foreach(_source IN ITEMS ${L2_CORE_NODE_SOURCES})
 endforeach()
 
 ENDIF()
-add_executable(L2_core_node ${L2_CORE_NODE_SOURCES} ${NODE_SYSTEM_SOURCES})
-target_include_directories(L2_core_node PRIVATE ${L2_CORE_NODE_SOURCES_DIR})
-target_include_directories(L2_core_node PRIVATE ${NODE_SYSTEM_SOURCES_DIR})
+add_executable(${PROJECT_NAME} ${L2_CORE_NODE_SOURCES} ${NODE_SYSTEM_SOURCES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${L2_CORE_NODE_SOURCES_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${NODE_SYSTEM_SOURCES_DIR})
 set(CMAKE_CXX_FLAGS_DEBUG_INIT "${CMAKE_CXX_FLAGS_DEBUG_INIT}" "Zl")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCREMENTAL /EDITANDCONTINUE")
 
-# target_link_libraries(L2_core_node node_system)
-target_add_libraries(L2_core_node "openssl" "spdlog" "boost")
-#target_precompile_headers(L2_core_node PRIVATE "${NODE_SYSTEM_SOURCES_DIR}/include/library-pch.hpp")
+# target_link_libraries(${PROJECT_NAME} node_system)
+target_add_libraries(${PROJECT_NAME} "openssl" "spdlog" "boost")
+#target_precompile_headers(${PROJECT_NAME} PRIVATE "${NODE_SYSTEM_SOURCES_DIR}/include/library-pch.hpp")
 
-set_target_properties(L2_core_node PROPERTIES LINKER_LANGUAGE CXX)
-file(WRITE "${CMAKE_BINARY_DIR}/L2_core_node.vcxproj.user" "\
+set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+file(WRITE "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.vcxproj.user" "\
 <?xml version=\"1.0\" encoding=\"utf-8\"?> \ 
 <Project ToolsVersion=\"Current\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\"> \ 
   <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\"> \ 
@@ -51,12 +52,12 @@ file(WRITE "${CMAKE_BINARY_DIR}/L2_core_node.vcxproj.user" "\
 </Project> \ 
 ")
 
-set_target_properties(L2_core_node PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BINARY_OUTPUT_DIR})
+set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BINARY_OUTPUT_DIR})
 
 # copy the executable to the runtime directory
-add_custom_command(TARGET L2_core_node POST_BUILD 
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
   COMMAND "${CMAKE_COMMAND}" -E copy 
-     "$<TARGET_FILE:L2_core_node>"
-     "${CMAKE_CURRENT_SOURCE_DIR}/runtime_directory/$<CONFIGURATION>/$<TARGET_FILE_NAME:L2_core_node>" 
+     "$<TARGET_FILE:${PROJECT_NAME}>"
+     "${CMAKE_CURRENT_SOURCE_DIR}/runtime_directory/$<TARGET_FILE_NAME:${PROJECT_NAME}>" 
   COMMENT "Copying the executable to output directory"
 )
