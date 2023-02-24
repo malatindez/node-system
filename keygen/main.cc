@@ -15,7 +15,7 @@ void WriteMergedKeys(std::string const& private_key_merged_file, std::string con
 {
     const auto private_path = std::filesystem::path(private_key_merged_file);
     const auto public_path = std::filesystem::path(public_key_merged_file);
-    if (force)
+    if (!force)
     {
         if (std::filesystem::exists(private_path))
         {
@@ -47,7 +47,7 @@ void WriteSeparateKeys(std::string const& private_key_output_folder, std::string
         i++;
         const auto private_path = std::filesystem::path(private_key_output_folder) / ("private" + std::to_string(i) + ".pem");
         const auto public_path = std::filesystem::path(public_key_output_folder) / ("public" + std::to_string(i) + ".pem");
-        if (force)
+        if (!force)
         {
             if (std::filesystem::exists(private_path))
             {
@@ -124,6 +124,10 @@ int main(int argc, char **argv)
         {
             force = vm["force"].as<bool>();
         }
+        if (vm.contains("amount"))
+        {
+            amount = vm["amount"].as<uint32_t>();
+        }
         if (vm.contains("merge"))
         {
             merge = vm["merge"].as<bool>();
@@ -143,7 +147,7 @@ int main(int argc, char **argv)
         {
             ECDSA::KeyPairGenerator generator(curve);
 
-            for (int i = 0; i < amount; i++)
+            for (uint32_t i = 0; i < amount; i++)
             {
                 KeyPair pair = generator.generate();
                 ECDSA::Signer signer{ pair.private_key, Hash::HashType::SHA256 };

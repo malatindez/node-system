@@ -48,7 +48,7 @@ namespace node_system::crypto::ECDSA
                 EVP_PKEY_CTX_free(ctx_);
             }
 
-            KeyPair generate() const
+            [[nodiscard]] KeyPair generate() const
             { 
                 EVP_PKEY *pkey = nullptr;
                 utils::AlwaysAssert(EVP_PKEY_keygen(ctx_, &pkey) > 0, "EVP_PKEY_keygen() failed");
@@ -123,7 +123,7 @@ namespace node_system::crypto::ECDSA
             EVP_PKEY_free(pkey_);
         }
 
-        ByteArray sign_hash(const Hash hash) const
+        [[nodiscard]] ByteArray sign_hash(const Hash hash) const
         {
             utils::Assert(hash.hash_type == hash_type_, "Unsupported hash type");
 
@@ -138,7 +138,7 @@ namespace node_system::crypto::ECDSA
             return signature;
         }
 
-        ByteArray sign_data(const ByteView data) const
+        [[nodiscard]] ByteArray sign_data(const ByteView data) const
         {
             const Hash hash = SHA::ComputeHash(data, hash_type_);
             return sign_hash(hash);
@@ -188,14 +188,14 @@ namespace node_system::crypto::ECDSA
                 EVP_PKEY_free(pkey_);
             }
 
-            bool verify_hash(const Hash hash, const ByteView signature) const
+            [[nodiscard]] bool verify_hash(const Hash hash, const ByteView signature) const
             {
                 utils::Assert(hash.hash_type == hash_type_, "Unsupported hash type");
 
                 return EVP_PKEY_verify(ctx_, signature.as<unsigned char>(), signature.size(), hash.as_uint8(), hash.size()) > 0;
             }
 
-            bool verify_data(const ByteView data, const ByteView signature) const
+            [[nodiscard]] bool verify_data(const ByteView data, const ByteView signature) const
             {
                 const Hash hash = SHA::ComputeHash(data, hash_type_);
                 return verify_hash(hash, signature);
@@ -207,32 +207,32 @@ namespace node_system::crypto::ECDSA
             const Hash::HashType hash_type_;
     };
     [[deprecated]]
-    KeyPair generate_key_pair(std::string curve_name)
+    [[nodiscard]] KeyPair generate_key_pair(std::string curve_name)
     {
         KeyPairGenerator instance(curve_name);
         return instance.generate();
     }
     
     [[deprecated]]
-    ByteArray sign_data(const KeyView private_key, const ByteView data, const Hash::HashType hash_type)
+    [[nodiscard]] ByteArray sign_data(const KeyView private_key, const ByteView data, const Hash::HashType hash_type)
     {
         Signer instance(private_key, hash_type);
         return instance.sign_data(data);
     }
     [[deprecated]]
-    ByteArray sign_hash(const KeyView private_key, const Hash hash)
+    [[nodiscard]] ByteArray sign_hash(const KeyView private_key, const Hash hash)
     {
         Signer instance(private_key, hash.hash_type);
         return instance.sign_hash(hash);
     }
     [[deprecated]]
-    bool verify_data(const KeyView public_key, const ByteView data, const ByteView signature, const Hash::HashType hash_type)
+    [[nodiscard]] bool verify_data(const KeyView public_key, const ByteView data, const ByteView signature, const Hash::HashType hash_type)
     {
         Verifier instance(public_key, hash_type);
         return instance.verify_data(data, signature);
     }
     [[deprecated]]
-    bool verify_hash(const KeyView public_key, const Hash hash, const ByteView signature)
+    [[nodiscard]] bool verify_hash(const KeyView public_key, const Hash hash, const ByteView signature)
     {
         Verifier instance(public_key, hash.hash_type);
         return instance.verify_hash(hash, signature);
