@@ -4,3 +4,6 @@
 [submodule "third_party/boost-cmake"]
 	path = third_party/boost-cmake
 	url = https://github.com/Orphis/boost-cmake.git
+[submodule "third_party/google/google_test"]
+	path = third_party/google/google_test
+	url = https://github.com/google/googletest
