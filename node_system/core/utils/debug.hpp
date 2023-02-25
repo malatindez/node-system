@@ -23,9 +23,27 @@
 #endif
 
 #ifdef _DEBUG
-#define DEBUG_UTILS_DEBUG_ENABLED 1
+#   ifndef DEBUG_UTILS_ASSERT_ENABLED
+#       define DEBUG_UTILS_ASSERT_ENABLED 1
+#   endif
+#   ifndef DEBUG_UTILS_ALWAYS_ASSERT_ENABLED
+#       define DEBUG_UTILS_ALWAYS_ASSERT_ENABLED 1
+#   endif
 #else
-#define DEBUG_UTILS_DEBUG_ENABLED 0
+#   ifndef DEBUG_UTILS_ASSERT_ENABLED
+#       define DEBUG_UTILS_ASSERT_ENABLED 0
+#   endif
+#   ifndef DEBUG_UTILS_ALWAYS_ASSERT_ENABLED
+#       define DEBUG_UTILS_ALWAYS_ASSERT_ENABLED 1
+#   endif
+#endif
+
+#ifndef DEBUG_UTILS_FORCE_ASSERT
+#   ifdef _DEBUG
+#       define DEBUG_UTILS_FORCE_ASSERT 1
+#   else
+#       define DEBUG_UTILS_FORCE_ASSERT 0
+#   endif
 #endif
 
 #if DEBUG_UTILS_ASSERT_THROWS

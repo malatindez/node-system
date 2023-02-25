@@ -6,6 +6,7 @@
 #include <openssl/evp.h>
 #include <openssl/dh.h>
 #include <openssl/ecdh.h>
+#include <openssl/sha.h>
 
 namespace node_system::crypto
 {
@@ -32,6 +33,13 @@ namespace node_system::crypto
             SHA384,
             SHA512
         };
+        static constexpr const char* SHA256_NAME = "SHA256";
+        static constexpr const char* SHA384_NAME = "SHA384";
+        static constexpr const char* SHA512_NAME = "SHA512";
+
+        static constexpr uint32_t SHA256_SIZE = SHA256_DIGEST_LENGTH;
+        static constexpr uint32_t SHA384_SIZE = SHA384_DIGEST_LENGTH;
+        static constexpr uint32_t SHA512_SIZE = SHA512_DIGEST_LENGTH;
 
         Hash(const ByteArray hash_value, const HashType hash) : hash_type{ hash }, hash_value{ hash_value } {}
 
@@ -75,8 +83,14 @@ namespace node_system::crypto
     {
         void operator() (BIO* ptr) const { BIO_free_all(ptr); }
     };
+    template <>
+    struct OPENSSL_OBJECT_WRAPPER<EVP_CIPHER_CTX>
+    {
+        void operator() (EVP_CIPHER_CTX* ptr) const { EVP_CIPHER_CTX_free(ptr); }
+    };
 
     using EVP_PKEY_CTX_WRAPPER = std::unique_ptr<EVP_PKEY_CTX, OPENSSL_OBJECT_WRAPPER<EVP_PKEY_CTX>>;
     using EVP_PKEY_WRAPPER = std::unique_ptr<EVP_PKEY, OPENSSL_OBJECT_WRAPPER<EVP_PKEY>>;
     using BIO_WRAPPER = std::unique_ptr<BIO, OPENSSL_OBJECT_WRAPPER<BIO>>;
+    using EVP_CIPHER_CTX_WRAPPER = std::unique_ptr<EVP_CIPHER_CTX, OPENSSL_OBJECT_WRAPPER<EVP_CIPHER_CTX>>;
 }
