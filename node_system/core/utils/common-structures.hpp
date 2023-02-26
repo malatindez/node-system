@@ -7,22 +7,22 @@ namespace utils
     {
     public:
         non_copyable() = default;
-        non_copyable(const non_copyable &) = delete;
-        non_copyable &operator=(const non_copyable &) = delete;
+        non_copyable(const non_copyable&) = delete;
+        non_copyable& operator=(const non_copyable&) = delete;
     };
     /// @brief A class that can't be moved
     class non_movable
     {
     public:
         non_movable() = default;
-        non_movable(non_movable &&) = delete;
-        non_movable &operator=(non_movable &&) = delete;
+        non_movable(non_movable&&) = delete;
+        non_movable& operator=(non_movable&&) = delete;
     };
     /// @brief A class that can't be copied neither moved
-    class non_copyable_movable : public non_copyable, public non_movable
+    class non_copyable_non_movable : public non_copyable, public non_movable
     {
     public:
-        non_copyable_movable() = default;
+        non_copyable_non_movable() = default;
     };
     /**
      * @brief A class that contains a name and can be named and unnamed
@@ -32,12 +32,12 @@ namespace utils
     {
     public:
         namable() = default;
-        constexpr explicit namable(std::string const &name) : name_(name) {}
-        constexpr explicit namable(std::string &&name) : name_(std::move(name)) {}
+        constexpr explicit namable(std::string const& name) : name_(name) {}
+        constexpr explicit namable(std::string&& name) : name_(std::move(name)) {}
         ~namable() = default;
 
-        constexpr void set_name(std::string const &name) { name_ = name; }
-        constexpr void set_name(std::string &&name) { name_ = std::move(name); }
+        constexpr void set_name(std::string const& name) { name_ = name; }
+        constexpr void set_name(std::string&& name) { name_ = std::move(name); }
         constexpr void clear_name() { name_.clear(); }
         constexpr bool has_name() const { return !name_.empty(); }
         [[nodiscard]] constexpr std::string_view name() const { return name_; }
@@ -53,8 +53,8 @@ namespace utils
     {
     public:
         namable_protected() = default;
-        constexpr explicit namable_protected(std::string const &name) : namable(name) {}
-        constexpr explicit namable_protected(std::string &&name) : namable(std::move(name)) {}
+        constexpr explicit namable_protected(std::string const& name) : namable(name) {}
+        constexpr explicit namable_protected(std::string&& name) : namable(std::move(name)) {}
         ~namable_protected() = default;
     protected:
         using namable::set_name;
@@ -68,8 +68,8 @@ namespace utils
     class namable_once : private namable
     {
     public:
-        constexpr explicit namable_once(std::string const &name) : namable(name) {}
-        constexpr explicit namable_once(std::string &&name) : namable(std::move(name)) {}
+        constexpr explicit namable_once(std::string const& name) : namable(name) {}
+        constexpr explicit namable_once(std::string&& name) : namable(std::move(name)) {}
         ~namable_once() = default;
         using namable::has_name;
         using namable::name;

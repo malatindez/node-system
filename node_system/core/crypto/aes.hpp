@@ -5,12 +5,12 @@
 #include <openssl/aes.h>
 namespace node_system::crypto::AES
 {
-    class AES256 : utils::non_copyable_movable
+    class AES256 : utils::non_copyable_non_movable
     {
     public:
         static constexpr uint32_t KEY_SIZE = 32;
         static constexpr uint32_t SALT_SIZE = 8;
-        
+
         AES256(const KeyView input_key, const ByteView salt, const int nrounds = 5)
         {
             utils::AlwaysAssert(input_key.size() == 32, "Key size must be 32 bytes");

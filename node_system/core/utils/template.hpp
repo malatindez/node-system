@@ -39,7 +39,7 @@ namespace utils
     // based on https://artificial-mind.net/blog/2020/10/31/constexpr-for
 
     template <auto begin, auto end, auto inc, class F>
-    constexpr void constexpr_for(F &&f)
+    constexpr void constexpr_for(F&& f)
     {
         if (not f(std::integral_constant<decltype(begin), begin>{}))
         {
@@ -56,7 +56,7 @@ namespace utils
     }
 
     template <class iterator, class F>
-    constexpr bool for_each_true(iterator begin, iterator const &end, F &&f)
+    constexpr bool for_each_true(iterator begin, iterator const& end, F&& f)
     {
         bool rv = true;
         for (; begin != end;)
@@ -64,6 +64,13 @@ namespace utils
             rv &= f(begin++);
         }
         return rv;
+    }
+
+    template <typename Enumeration>
+    constexpr auto as_integer(Enumeration const value)
+        -> typename std::underlying_type<Enumeration>::type
+    {
+        return static_cast<typename std::underlying_type<Enumeration>::type>(value);
     }
 
     template <typename T>
@@ -82,73 +89,73 @@ namespace utils
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...)>
+    struct return_type<R(C::*)(Args...)>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) &>
+    struct return_type<R(C::*)(Args...)&>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) &&>
+    struct return_type<R(C::*)(Args...)&&>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) const>
+    struct return_type<R(C::*)(Args...) const>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) const &>
+    struct return_type<R(C::*)(Args...) const&>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) const &&>
+    struct return_type<R(C::*)(Args...) const&&>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) volatile>
+    struct return_type<R(C::*)(Args...) volatile>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) volatile &>
+    struct return_type<R(C::*)(Args...) volatile&>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) volatile &&>
+    struct return_type<R(C::*)(Args...) volatile&&>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) const volatile>
+    struct return_type<R(C::*)(Args...) const volatile>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) const volatile &>
+    struct return_type<R(C::*)(Args...) const volatile&>
     {
         using type = R;
     };
 
     template <typename R, typename C, typename... Args>
-    struct return_type<R(C:: *)(Args...) const volatile &&>
+    struct return_type<R(C::*)(Args...) const volatile&&>
     {
         using type = R;
     };
