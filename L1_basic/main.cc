@@ -1,33 +1,29 @@
 #include <iostream>
 #include <boost/asio.hpp>
-#include <openssl/aes.h>
-#include <iostream>
-class udp_client {
-public:
-    udp_client(const std::string& host, int port) : socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0)), endpoint(boost::asio::ip::address::from_string(host), port) {}
-
-    void send(const std::string& message) {
-        socket.async_send_to(boost::asio::buffer(message), endpoint,
-            [this, &message](boost::system::error_code ec, std::size_t bytes_sent) {
-                if (!ec && bytes_sent > 0) {
-                    std::cout << "Sent " << bytes_sent << " bytes: " << message << std::endl;
-                }
-            });
-    }
-
-    boost::asio::io_service io_service;
-    boost::asio::ip::udp::socket socket;
-    boost::asio::ip::udp::endpoint endpoint;
-};
-
+#include "core/common/session.hpp"
 int main() {
-    udp_client client("127.0.0.1", 1234);
-    std::string message;
-    std::cout << "Write your secret message: ";
-    std::cin >> message;
-    client.send(message);
+    try {
+        boost::asio::io_service io_service;
+        boost::asio::ip::tcp::socket socket(io_service);
 
-    client.io_service.run();
+        socket.connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 1234));
+        std::cout << "Connected to server." << std::endl;
+
+        while (true) {
+            std::string message;
+            std::getline(std::cin, message);
+
+            if (message == "exit") {
+                break;
+            }
+
+            boost::asio::write(socket, boost::asio::buffer(message + "\n"));
+            std::cout << "Sent message: " << message << std::endl;
+        }
+    }
+    catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
 
     return 0;
 }
