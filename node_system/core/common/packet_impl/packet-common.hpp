@@ -53,6 +53,7 @@ namespace node_system
     {
         PING = 0000UL + utils::as_integer(PacketSubsystemType::NETWORK),
         PONG = 0001UL + utils::as_integer(PacketSubsystemType::NETWORK),
+        MESSAGE = 0002UL + utils::as_integer(PacketSubsystemType::NETWORK),
     };
     enum class SystemPacketType : uint32_t
     {

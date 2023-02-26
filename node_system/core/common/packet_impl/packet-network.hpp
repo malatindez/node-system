@@ -27,6 +27,20 @@ namespace node_system
             ar& boost::serialization::base_object<DerivedPacket<class PongPacket>>(*this);
         }
     };
+    
+    class MessagePacket : public DerivedPacket<class MessagePacket> {
+    public:
+        static constexpr uint32_t static_type = static_cast<uint32_t>(NetworkPacketType::MESSAGE);
+        [[nodiscard]] Permission get_permission() const override { return Permission::ANY; }
+        std::string message;
+    private:
+        friend class boost::serialization::access;
+        template<class Archive>
+        void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
+            ar& boost::serialization::base_object<DerivedPacket<class MessagePacket>>(*this);
+            ar& message;
+        }
+    };
 
     template <>
     class PacketFactorySubsystem<PacketSubsystemType::NETWORK> {
@@ -37,6 +51,8 @@ namespace node_system
                 return DerivedPacket<PingPacket>::deserialize(buffer);
             case NetworkPacketType::PONG:
                 return DerivedPacket<PongPacket>::deserialize(buffer);
+            case NetworkPacketType::MESSAGE:
+                return DerivedPacket<MessagePacket>::deserialize(buffer);
             }
             return nullptr;
         }

@@ -28,7 +28,7 @@ namespace node_system::crypto::ECDSA
         throw std::invalid_argument("Unknown curve type");
     }
 
-    class KeyPairGenerator : utils::non_copyable_movable
+    class KeyPairGenerator : utils::non_copyable_non_movable
     {
     public:
         explicit KeyPairGenerator(const int curve_id)
@@ -75,7 +75,7 @@ namespace node_system::crypto::ECDSA
         EVP_PKEY_CTX_WRAPPER ctx_ = nullptr;
     };
 
-    class Signer : utils::non_copyable_movable
+    class Signer : utils::non_copyable_non_movable
     {
     public:
         Signer(const KeyView private_key, const Hash::HashType hash_type) : hash_type_(hash_type)
@@ -133,7 +133,7 @@ namespace node_system::crypto::ECDSA
         const Hash::HashType hash_type_;
     };
 
-    class Verifier : utils::non_copyable_movable
+    class Verifier : utils::non_copyable_non_movable
     {
     public:
         Verifier(const KeyView public_key, const Hash::HashType hash_type) : hash_type_(hash_type)

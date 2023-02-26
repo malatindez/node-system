@@ -12,7 +12,7 @@
 
 namespace node_system::crypto
 {
-    class DiffieHellmanHelper : utils::non_copyable_movable
+    class DiffieHellmanHelper : utils::non_copyable_non_movable
     {
     public:
         DiffieHellmanHelper()

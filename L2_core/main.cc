@@ -1,60 +1,65 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
-public:
-    TcpConnection(boost::asio::ip::tcp::socket socket) : socket_(std::move(socket)) {}
 
-    void start() {
-        doRead();
-    }
+#include "core/common/session.hpp"
 
-    void send(const std::string& message) {
-        auto self(shared_from_this());
-        boost::asio::async_write(socket_, boost::asio::buffer(message + "\n"),
-            [this, self](boost::system::error_code ec, std::size_t length) {
-                if (ec)
+void ProcessIO(const bool& alive, std::vector<std::shared_ptr<node_system::Session>>& sessions_, std::mutex& connection_access)
+{
+    while (alive) {
+        std::string message = "test message from server";
+
+        if (message == "exit") {
+            sessions_.clear();
+            break;
+        }
+        node_system::MessagePacket msg_packet;
+        msg_packet.message = message + "\n";
+        if (std::ranges::any_of(sessions_, [](const auto& connection) { return connection->is_closed() && !connection->has_packets(); }))
+        {
+            std::unique_lock lock(connection_access);
+            std::erase_if(sessions_, [](const auto& connection) { return connection->is_closed() && !connection->has_packets(); });
+        }
+        for (const auto& session : sessions_)
+            if (!session->is_closed())
+            {
+                session->send_packet(msg_packet);
+                std::cout << "Sent message: " << message << std::endl;
+            }
+
+        for (const auto& session : sessions_)
+        {
+            while (session->has_packets())
+            {
+                auto packet = session->pop_packet();
+                if (packet)
                 {
-                    std::cerr << "Error sending message: " << ec.message() << std::endl;
+                    packet->type == utils::as_integer(node_system::NetworkPacketType::MESSAGE)
+                        ? std::cout << "Received message: " << reinterpret_cast<node_system::MessagePacket*>(packet.get())->message
+                        : std::cout << "Received unknown packet type: " << packet->type;
                 }
-                else
-                {
-                    std::cout << "Successfully sent message of length " << length << std::endl;
-                }
-            });
-    }
+            }
+        }
 
-private:
-    void doRead() {
-        boost::asio::async_read(socket_, buffer_, boost::asio::transfer_all(),
-            [this](boost::system::error_code ec, std::size_t length) {
-                if (ec) {
-                    std::cerr << "Error reading message: " << ec.message() << std::endl;
-                }
-                else {
-                    std::istream is(&buffer_);
-                    std::string message;
-                    std::getline(is, message);
-                    std::cout << "Received message: " << message << std::endl;
-                    doRead();
-                }
-            });
+        std::this_thread::yield();
     }
-
-    boost::asio::ip::tcp::socket socket_;
-    boost::asio::streambuf buffer_;
-};
+}
 
 class TcpServer {
 public:
-    TcpServer(boost::asio::io_service& io_service, unsigned short port)
-        : acceptor_(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
+    TcpServer(boost::asio::io_context& io_context, unsigned short port)
+        : acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)),
+        io_context_(io_context)
     {
-        doAccept();
+        do_accept();
+        connections_.reserve(100);
     }
-
+    ~TcpServer()
+    {
+        alive = false;
+    }
 private:
-    void doAccept() {
+    void do_accept() {
         acceptor_.async_accept(
             [this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
                 if (ec) {
@@ -62,23 +67,35 @@ private:
                 }
                 else {
                     std::cout << "New connection established." << std::endl;
-                    auto connection = std::make_shared<TcpConnection>(std::move(socket));
+                    const auto connection = std::make_shared<node_system::Session>(io_context_, std::move(socket));
+                    node_system::ByteArray key;
+                    node_system::ByteArray salt;
+                    key.resize(32);
+                    salt.resize(8);
+                    memcpy(key.data(), "12345678901234567890123456789012", 32);
+                    memcpy(salt.data(), "12345678", 8);
+                    int nrounds = 5;
+                    connection->setup_encryption(key, salt, nrounds);
+                    std::unique_lock lock{ connection_access };
                     connections_.push_back(connection);
-                    connection->start();
+                    //  connection->start();
                 }
-        doAccept();
+        do_accept();
             });
     }
-
+    std::mutex connection_access;
+    bool alive = true;
+    std::jthread console_io_thread{ ProcessIO, std::ref(alive), std::ref(connections_), std::ref(connection_access) };
     boost::asio::ip::tcp::acceptor acceptor_;
-    std::vector<std::shared_ptr<TcpConnection>> connections_;
+    std::vector<std::shared_ptr<node_system::Session>> connections_;
+    boost::asio::io_context& io_context_;
 };
 
 int main() {
     try {
-        boost::asio::io_service io_service;
-        TcpServer server(io_service, 1234);
-        io_service.run();
+        boost::asio::io_context io_context;
+        TcpServer server(io_context, 1234);
+        io_context.run();
     }
     catch (std::exception& e) {
         std::cerr << e.what() << std::endl;

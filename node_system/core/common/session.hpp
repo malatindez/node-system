@@ -7,6 +7,9 @@
 #include <boost/asio/write.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/endian/conversion.hpp>
+#include <boost/range/begin.hpp>
+#include <boost/range/end.hpp>
+#include <boost/asio/spawn.hpp>
 #include <queue>
 
 #include "packet.hpp"
@@ -19,19 +22,34 @@ namespace node_system
     class Session : public utils::non_copyable_non_movable
     {
     public:
-        explicit Session(boost::asio::ip::tcp::socket socket) : socket_(std::move(socket))
+        explicit Session(boost::asio::io_context& io, boost::asio::ip::tcp::socket&& socket) : socket_(std::move(socket))
         {
             receive_all();
             // call async packet forger
-            co_spawn(socket_.get_executor(), std::bind(&Session::async_packet_forger, this), boost::asio::detached);
-            co_spawn(socket_.get_executor(), std::bind(&Session::send_all, this), boost::asio::detached);
+
+            co_spawn(socket_.get_executor(), std::bind(&Session::async_packet_forger, this, std::ref(io)), boost::asio::detached);
+            co_spawn(socket_.get_executor(), std::bind(&Session::send_all, this, std::ref(io)), boost::asio::detached);
+            //            co_spawn(socket_.get_executor(), std::bind(&Session::read_all, this), boost::asio::detached);
+            if (alive_ = socket_.is_open())
+                spdlog::info("Session created");
         }
         virtual ~Session() = default;
 
-        void send_packet(const Packet& packet)
+        template<typename T>
+        void send_packet(const T& packet_arg) requires std::is_base_of_v<Packet, T>
         {
-            ByteArray buffer;
+            if (!alive_)
+            {
+                spdlog::warn("Session is closed, cannot send packet");
+                return;
+            }
+            const auto& packet = static_cast<const Packet&>(packet_arg);
+            ByteArray buffer = uint32_to_bytes(packet.type);
             packet.serialize(buffer);
+            if (aes_)
+            {
+                buffer = encrypt(buffer);
+            }
             std::unique_lock lock{ packets_to_send_mutex_ };
             packets_to_send_.push(std::move(buffer));
         }
@@ -52,6 +70,10 @@ namespace node_system
             }
             return nullptr;
         }
+        bool has_packets()
+        {
+            return !received_packets_.empty();
+        }
 
         void setup_encryption(ByteArray key, ByteArray salt, short nrounds)
         {
@@ -59,6 +81,7 @@ namespace node_system
         }
 
         [[nodiscard]] bool secured() const noexcept { return aes_ != nullptr; }
+        [[nodiscard]] bool is_closed() const noexcept { return !alive_ && !packet_forger_alive_ && !send_all_alive_; }
 
     protected:
         std::optional<ByteArray> pop_packet_data() noexcept
@@ -82,59 +105,84 @@ namespace node_system
                     if (ec)
                     {
                         spdlog::warn("Error reading message: {}", ec.message());
+                        socket_.close();
                         alive_ = false;
+                        std::unique_lock lock{ packets_to_send_mutex_ };
+                        std::queue<ByteArray>().swap(packets_to_send_);
                     }
                     else
                     {
                         spdlog::trace("Received total of {} bytes", length);
                     }
-            alive_ = false;
                 });
         }
-        boost::asio::awaitable<void> send_all()
+        boost::asio::awaitable<void> send_all(boost::asio::io_context& io)
         {
             bool writing = false;
+            ByteArray data_to_send;
+            data_to_send.reserve(1024 * 128);
             while (alive_)
             {
+                boost::asio::steady_timer timer(io, std::chrono::milliseconds(1));
                 if (!packets_to_send_.empty() && !writing)
                 {
                     writing = true;
-                    std::unique_lock lock{ packets_to_send_mutex_ };
-                    const ByteArray packet = std::move(packets_to_send_.front());
-                    packets_to_send_.pop();
+                    {
+                        std::unique_lock lock{ packets_to_send_mutex_ };
+                        data_to_send.clear();
+                        for (int i = 0; (i < 1000 || data_to_send.size() > 1024 * 128) && !packets_to_send_.empty(); i++)
+                        {
+                            ByteView packet = packets_to_send_.front();
+                            data_to_send.append(uint32_to_bytes(static_cast<uint32_t>(packet.size())));
+                            data_to_send.append(packet);
+                            packets_to_send_.pop();
+                        }
+                    }
 
-                    async_write(socket_, boost::asio::buffer(packet.as<char>(), packet.size()),
+                    async_write(socket_, boost::asio::buffer(data_to_send.as<char>(), data_to_send.size()),
                         [&](const boost::system::error_code ec, [[maybe_unused]] std::size_t length)
                         {
                             writing = false;
+                    data_to_send.clear();
                     if (ec) { spdlog::warn("Error sending message: {}", ec.message()); }
                         }
                     );
                 }
-                co_await boost::asio::this_coro::executor;
+                co_await timer.async_wait(boost::asio::use_awaitable);
             }
+            packet_forger_alive_ = false;
         }
-        boost::asio::awaitable<void> async_packet_forger()
+        boost::asio::awaitable<void> async_packet_forger(boost::asio::io_context& io)
         {
             while (alive_)
             {
+                boost::asio::steady_timer timer(io, std::chrono::milliseconds(1));
                 if (buffer_.size() >= 4)
                 {
                     ByteArray packet_size_data;
                     read_bytes_to(packet_size_data, 4);
                     const int64_t packet_size = bytes_to_uint32(packet_size_data);
                     utils::AlwaysAssert(packet_size != 0 && packet_size < 1024 * 1024 * 8, "The amount of bytes to read is too big");
-                    if (static_cast<int64_t>(buffer_.size()) >= packet_size - 4)
+
+                    while (buffer_.size() < packet_size && alive_)
                     {
-                        ByteArray packet_data;
-                        read_bytes_to(packet_data, packet_size);
-                        std::unique_lock lock{ received_packets_mutex_ };
-                        received_packets_.push(packet_data);
-                        continue;
+                        co_await timer.async_wait(boost::asio::use_awaitable);
                     }
+                    if (buffer_.size() < packet_size) // alive_ is false, we won't get any data anymore
+                    {
+                        spdlog::warn("The packet size is bigger than the buffer size");
+                        break;
+                    }
+
+                    ByteArray packet_data;
+                    read_bytes_to(packet_data, packet_size);
+                    std::unique_lock lock{ received_packets_mutex_ };
+                    received_packets_.push(packet_data);
+                    continue;
                 }
-                co_await boost::asio::this_coro::executor;
+                co_await timer.async_wait(boost::asio::use_awaitable);
             }
+            send_all_alive_ = false;
         }
 
         void read_bytes_to(ByteArray& byte_array, const size_t amount)
@@ -142,7 +190,6 @@ namespace node_system
             const size_t current_size = byte_array.size();
             byte_array.resize(current_size + amount);
             buffer_.sgetn(byte_array.as<char>() + current_size * sizeof(char), amount);
-            buffer_.consume(amount);
         }
 
         static uint32_t bytes_to_uint32(const ByteView byte_view)
@@ -172,6 +219,9 @@ namespace node_system
 
         std::mutex packets_to_send_mutex_;
         std::queue<ByteArray> packets_to_send_;
+
+        bool packet_forger_alive_ = true;
+        bool send_all_alive_ = true;
 
         bool alive_ = true;
         boost::asio::streambuf buffer_;
