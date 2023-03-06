@@ -10,6 +10,7 @@
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/asio/spawn.hpp>
+#include <memory>
 #include <queue>
 
 #include "packet.hpp"
@@ -19,7 +20,7 @@
 
 namespace node_system
 {
-    class Session : public utils::non_copyable_non_movable
+    class Session : public utils::non_copyable_non_movable, public std::enable_shared_from_this<Session>
     {
     public:
         explicit Session(boost::asio::io_context& io, boost::asio::ip::tcp::socket&& socket) : socket_(std::move(socket))
@@ -54,8 +55,9 @@ namespace node_system
             packets_to_send_.push(std::move(buffer));
         }
 
-        std::unique_ptr<Packet> pop_packet()
+        std::unique_ptr<Packet> pop_packet_now()
         {
+            
             if (const std::optional<ByteArray> packet_data = pop_packet_data();
                 packet_data)
             {
@@ -69,6 +71,34 @@ namespace node_system
                 return PacketFactory::deserialize(packet_data->view(4), packet_type);
             }
             return nullptr;
+        }
+        /**
+         * Returns nullptr if socket is crashed.
+         * If not, it will wait until the packet is available and will return it as soon as possible.
+         * This coroutine can be called in another context, cause it calls pop_packet_now which synchronizes using mutex.
+         */
+        boost::asio::awaitable<std::unique_ptr<Packet>> pop_packet_async(boost::asio::io_context& io)
+        {
+            std::weak_ptr<Session> weak_ptr_to_this = std::shared_ptr<Session>(this);
+            boost::asio::steady_timer timer(io, std::chrono::milliseconds(1));
+            while(true)
+            {
+                // Lock session just to check.
+                std::shared_ptr<Session> session_ptr = weak_ptr_to_this.lock();
+                if (session_ptr == nullptr || !this->alive_)
+                {
+                    co_return nullptr;
+                }
+
+                std::unique_ptr<Packet> packet = pop_packet_now();
+
+                if(packet)
+                {
+                    co_return packet;
+                }
+
+                co_await timer.async_wait(boost::asio::use_awaitable);
+            }
         }
         bool has_packets() const
         {

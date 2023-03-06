@@ -18,7 +18,7 @@ void ProcessIO(const bool& alive, std::unique_ptr<node_system::Session>& session
 
         while (session->has_packets())
         {
-            auto packet = session->pop_packet();
+            auto packet = session->pop_packet_now();
             packet->type == utils::as_integer(node_system::NetworkPacketType::MESSAGE)
                 ? std::cout << "Received message: " << reinterpret_cast<node_system::MessagePacket*>(packet.get())->message
                 : std::cout << "Received unknown packet type: " << packet->type;

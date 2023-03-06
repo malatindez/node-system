@@ -31,7 +31,7 @@ void ProcessIO(const bool& alive, std::vector<std::shared_ptr<node_system::Sessi
         {
             while (session->has_packets())
             {
-                auto packet = session->pop_packet();
+                auto packet = session->pop_packet_now();
                 if (packet)
                 {
                     packet->type == utils::as_integer(node_system::NetworkPacketType::MESSAGE)
