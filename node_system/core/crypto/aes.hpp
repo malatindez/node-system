@@ -11,7 +11,7 @@ namespace node_system::crypto::AES
         static constexpr uint32_t KEY_SIZE = 32;
         static constexpr uint32_t SALT_SIZE = 8;
 
-        AES256(const KeyView input_key, const ByteView salt, const int nrounds = 5)
+        AES256(const KeyView input_key, const ByteView salt, const int n_rounds = 5)
         {
             utils::AlwaysAssert(input_key.size() == 32, "Key size must be 32 bytes");
             utils::AlwaysAssert(salt.size() == 8, "Salt size must be 8 bytes");
@@ -20,9 +20,9 @@ namespace node_system::crypto::AES
 
             /*
             * Gen key & IV for AES 256 CBC mode. A SHA1 digest is used to hash the supplied key material.
-            * nrounds is the number of times the we hash the material. More rounds are more secure but slower.
+            * n_rounds is the number of times the we hash the material. More rounds are more secure but slower.
             */
-            int i = EVP_BytesToKey(EVP_aes_256_cbc(), EVP_sha1(), salt.as<unsigned char>(), input_key.as<unsigned char>(), static_cast<int>(input_key.size()), nrounds, key, iv);
+            int i = EVP_BytesToKey(EVP_aes_256_cbc(), EVP_sha1(), salt.as<unsigned char>(), input_key.as<unsigned char>(), static_cast<int>(input_key.size()), n_rounds, key, iv);
 
             utils::AlwaysAssert(i == 32, "Key size is " + std::to_string(i) + " bytes - should be 256 bits");
 

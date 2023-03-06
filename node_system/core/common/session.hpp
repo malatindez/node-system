@@ -70,14 +70,14 @@ namespace node_system
             }
             return nullptr;
         }
-        bool has_packets()
+        bool has_packets() const
         {
             return !received_packets_.empty();
         }
 
-        void setup_encryption(ByteArray key, ByteArray salt, short nrounds)
+        void setup_encryption(ByteArray key, ByteArray salt, short n_rounds)
         {
-            aes_ = std::make_unique<crypto::AES::AES256>(key, salt, nrounds);
+            aes_ = std::make_unique<crypto::AES::AES256>(key, salt, n_rounds);
         }
 
         [[nodiscard]] bool secured() const noexcept { return aes_ != nullptr; }
