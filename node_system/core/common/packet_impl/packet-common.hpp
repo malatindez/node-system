@@ -41,12 +41,12 @@ namespace node_system
          * with DH_KEY_EXCHANGE_RESPONSE.
          * This way we can initialize the connection
          */
-        DH_KEY_EXCHANGE = 0000UL + utils::as_integer(PacketSubsystemType::CRYPTO),
+        DH_KEY_EXCHANGE_REQUEST = 0000UL + utils::as_integer(PacketSubsystemType::CRYPTO),
         DH_KEY_EXCHANGE_RESPONSE = 0001UL + utils::as_integer(PacketSubsystemType::CRYPTO)
     };
     enum class NodePacketType : uint32_t
     {
-        NODE_INFO = 0000UL + utils::as_integer(PacketSubsystemType::NODE),
+        NODE_INFO_REQUEST = 0000UL + utils::as_integer(PacketSubsystemType::NODE),
         NODE_INFO_RESPONSE = 0001UL + utils::as_integer(PacketSubsystemType::NODE),
     };
     enum class NetworkPacketType : uint32_t
@@ -57,7 +57,7 @@ namespace node_system
     };
     enum class SystemPacketType : uint32_t
     {
-        SYSTEM_INFO = 0000UL + utils::as_integer(PacketSubsystemType::SYSTEM),
+        SYSTEM_INFO_REQUEST = 0000UL + utils::as_integer(PacketSubsystemType::SYSTEM),
         SYSTEM_INFO_RESPONSE = 0001UL + utils::as_integer(PacketSubsystemType::SYSTEM),
     };
 
@@ -72,4 +72,14 @@ namespace node_system
 
     template <PacketSubsystemType subsystem>
     class PacketFactorySubsystem;
+
+    class Packet;
+
+    class PacketProcessingSubsystem
+    {
+    public:
+        virtual ~PacketProcessingSubsystem() = default;
+        virtual void process_packet(std::unique_ptr<Packet> && packet) = 0;
+        virtual bool filter_packet(const Packet & packet) = 0;
+    };
 }

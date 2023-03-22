@@ -31,7 +31,8 @@ namespace node_system
             co_spawn(socket_.get_executor(), std::bind(&Session::async_packet_forger, this, std::ref(io)), boost::asio::detached);
             co_spawn(socket_.get_executor(), std::bind(&Session::send_all, this, std::ref(io)), boost::asio::detached);
             //            co_spawn(socket_.get_executor(), std::bind(&Session::read_all, this), boost::asio::detached);
-            if (alive_ = socket_.is_open())
+            if (alive_ = socket_.is_open();
+                alive_)
                 spdlog::info("Session created");
         }
         virtual ~Session() = default;
@@ -57,7 +58,6 @@ namespace node_system
 
         std::unique_ptr<Packet> pop_packet_now()
         {
-            
             if (const std::optional<ByteArray> packet_data = pop_packet_data();
                 packet_data)
             {
@@ -73,15 +73,16 @@ namespace node_system
             return nullptr;
         }
         /**
-         * Returns nullptr if socket is crashed.
+         * Returns nullptr if socket has crashed.
          * If not, it will wait until the packet is available and will return it as soon as possible.
          * This coroutine can be called in another context, cause it calls pop_packet_now which synchronizes using mutex.
          */
         boost::asio::awaitable<std::unique_ptr<Packet>> pop_packet_async(boost::asio::io_context& io)
         {
-            std::weak_ptr<Session> weak_ptr_to_this = std::shared_ptr<Session>(this);
+            std::weak_ptr<Session> weak_ptr_to_this = shared_from_this();
+            
             boost::asio::steady_timer timer(io, std::chrono::milliseconds(1));
-            while(true)
+            while (true)
             {
                 // Lock session just to check.
                 std::shared_ptr<Session> session_ptr = weak_ptr_to_this.lock();
@@ -92,7 +93,7 @@ namespace node_system
 
                 std::unique_ptr<Packet> packet = pop_packet_now();
 
-                if(packet)
+                if (packet)
                 {
                     co_return packet;
                 }
@@ -194,11 +195,11 @@ namespace node_system
                     const int64_t packet_size = bytes_to_uint32(packet_size_data);
                     utils::AlwaysAssert(packet_size != 0 && packet_size < 1024 * 1024 * 8, "The amount of bytes to read is too big");
 
-                    while (buffer_.size() < packet_size && alive_)
+                    while (static_cast<int64_t>(buffer_.size()) < packet_size && alive_)
                     {
                         co_await timer.async_wait(boost::asio::use_awaitable);
                     }
-                    if (buffer_.size() < packet_size) // alive_ is false, we won't get any data anymore
+                    if (static_cast<int64_t>(buffer_.size()) < packet_size) // alive_ is false, we won't get any data anymore
                     {
                         spdlog::warn("The packet size is bigger than the buffer size");
                         break;

@@ -29,9 +29,9 @@ namespace node_system::crypto::AES
             encrypt_context_.reset(EVP_CIPHER_CTX_new());
             decrypt_context_.reset(EVP_CIPHER_CTX_new());
             EVP_CIPHER_CTX_init(encrypt_context_.get());
-            EVP_EncryptInit_ex(encrypt_context_.get(), EVP_aes_256_cbc(), NULL, key, iv);
+            EVP_EncryptInit_ex(encrypt_context_.get(), EVP_aes_256_cbc(), nullptr, key, iv);
             EVP_CIPHER_CTX_init(decrypt_context_.get());
-            EVP_DecryptInit_ex(decrypt_context_.get(), EVP_aes_256_cbc(), NULL, key, iv);
+            EVP_DecryptInit_ex(decrypt_context_.get(), EVP_aes_256_cbc(), nullptr, key, iv);
         }
         [[nodiscard]] ByteArray encrypt(const ByteView plaintext) const
         {
@@ -42,7 +42,7 @@ namespace node_system::crypto::AES
             ByteArray ciphertext;
             ciphertext.resize(c_len);
 
-            EVP_EncryptInit_ex(encrypt_context_.get(), NULL, NULL, NULL, NULL);
+            EVP_EncryptInit_ex(encrypt_context_.get(), nullptr, nullptr, nullptr, nullptr);
             EVP_EncryptUpdate(encrypt_context_.get(), ciphertext.as<unsigned char>(), &c_len, plaintext.as<unsigned char>(), static_cast<int>(plaintext.size()));
             EVP_EncryptFinal_ex(encrypt_context_.get(), ciphertext.as<unsigned char>() + c_len, &f_len);
 
@@ -56,7 +56,7 @@ namespace node_system::crypto::AES
             int f_len = 0;
             ByteArray plaintext;
             plaintext.resize(p_len);
-            EVP_DecryptInit_ex(decrypt_context_.get(), NULL, NULL, NULL, NULL);
+            EVP_DecryptInit_ex(decrypt_context_.get(), nullptr, nullptr, nullptr, nullptr);
             EVP_DecryptUpdate(decrypt_context_.get(), plaintext.as<unsigned char>(), &p_len, ciphertext.as<unsigned char>(), static_cast<int>(ciphertext.size()));
             EVP_DecryptFinal_ex(decrypt_context_.get(), plaintext.as<unsigned char>() + p_len, &f_len);
             plaintext.resize(p_len + f_len);

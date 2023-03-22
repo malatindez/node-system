@@ -14,9 +14,9 @@ namespace utils
         };
 #ifndef ENGINE_NO_SOURCE_LOCATION
         Measurer(std::string_view s = "Measurer",
-                 bool log_automatically = true,
-                 float time_to_flush = 30,
-                 std::source_location location = std::source_location::current()) :
+            bool log_automatically = true,
+            float time_to_flush = 30,
+            std::source_location location = std::source_location::current()) :
             log_automatically(log_automatically), time_to_flush(time_to_flush)
         {
             output = CurrentSourceLocation(location) + std::basic_string(s) + " ";
@@ -34,7 +34,7 @@ namespace utils
         }
         float end()
         {
-            float t = measure.elapsed();
+            const float t = measure.elapsed();
             entries.push_back({ entry_time.elapsed(), measure.elapsed() });
             if (log_automatically && flush.elapsed() > time_to_flush)
             {
@@ -45,11 +45,11 @@ namespace utils
         }
         void log()
         {
-            size_t entries_amount = entries.size() - index;
+            const size_t entries_amount = entries.size() - index;
             index = entries.size() - 1;
 
-            float average = avg();
-            float avg_over_the_flush = avg(entries_amount);
+            const float average = avg();
+            const float avg_over_the_flush = avg(entries_amount);
 
             std::stringstream out;
             out << output << std::endl;
@@ -67,13 +67,13 @@ namespace utils
             spdlog::info(out.str());
         }
 
-        float avg(size_t last_n_entries = std::numeric_limits<size_t>::max())
+        float avg(const size_t last_n_entries = std::numeric_limits<size_t>::max())
         {
             float rv = 0;
             size_t counter = 0;
-            for (int64_t i = int64_t(entries.size()) - 1;
-                 counter < last_n_entries && i >= 0;
-                 ++counter, --i)
+            for (int64_t i = static_cast<int64_t>(entries.size()) - 1;
+                counter < last_n_entries && i >= 0;
+                ++counter, --i)
             {
                 rv += entries[i].elapsed;
             }
@@ -83,10 +83,10 @@ namespace utils
         float avg_over_the_last(float seconds)
         {
             float rv = 0;
-            int64_t i = int64_t(entries.size()) - 1;
+            int64_t i = static_cast<int64_t>(entries.size()) - 1;
             for (;
-                 i >= 0;
-                 --i)
+                i >= 0;
+                --i)
             {
                 rv += entries[i].elapsed;
                 if (entries[i].entry_time < entry_time.elapsed() - seconds)
@@ -97,13 +97,13 @@ namespace utils
             return rv / seconds;
         }
 
-        float avg_over_the_last_limited(float seconds)
+        float avg_over_the_last_limited(const float seconds)
         {
             float rv = 0;
-            int64_t i = int64_t(entries.size()) - 1;
+            int64_t i = static_cast<int64_t>(entries.size()) - 1;
             for (;
-                 i >= 0;
-                 --i)
+                i >= 0;
+                --i)
             {
                 rv += entries[i].elapsed;
                 if (entries[i].entry_time < entry_time.elapsed() - seconds)
@@ -123,8 +123,8 @@ namespace utils
             uint64_t rv = 0;
             int64_t i = int64_t(entries.size()) - 1;
             for (;
-                 i >= 0;
-                 --i)
+                i >= 0;
+                --i)
             {
                 ++rv;
                 if (entries[i].entry_time < entry_time.elapsed() - seconds)
